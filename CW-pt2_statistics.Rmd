@@ -1,0 +1,443 @@
+---
+title: "wsites_CWork"
+author: "Nsenam Udoh - School of Computing, RGU"
+output: html_document
+---
+```{r}
+writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
+```
+
+```{r}
+Sys.which("make")
+```
+
+
+
+```{r}
+library(devtools)
+```
+
+
+```{r}
+ find_rtools()
+```
+
+
+# Setting Working Directory
+```{r}
+setwd("C:/Users/nsena/OneDrive/Documents/MSC_DS_RGU/CMM507_prof_dev_&_res_skills/slides/Assessment_information/indiv_coursework")
+```
+
+# installing ggplot2 
+```{r}
+library(here)
+library(ggplot2)
+```
+
+# Loading the wsites
+```{r}
+wsites<-read.csv("wsites.csv")
+```
+
+# Displaying Structure of dataset
+```{r}
+str(wsites)
+```
+
+# SECTION 1
+# Question 1
+
+\ Plot showing the distribution of values for REMOTE_IPS
+
+```{r}
+hist(wsites$REMOTE_IPS, xlab = "Number of IPs connected",
+main = "Distribution of the REMOTE_IPS", breaks = 20)
+```
+## It doesn't show a normal distribution as the distribution is skewed
+
+\ Getting the most frequent value
+```{r}
+getmode <- function(s) {
+   uniqs <- unique(s)
+   uniqs[which.max(tabulate(match(s, uniqs)))]
+}
+charv <- c(wsites$REMOTE_IPS)
+result <- getmode(charv)
+print(result)
+```
+## The most frequent value is 0 and the second most frequent value is 1
+
+
+
+
+# Question 2
+\ Boxplot of URL_LENGTH by Type of website.
+
+```{r}
+ggplot(wsites, aes(Type,URL_LENGTH, fill = Type)) + geom_boxplot() +
+ggtitle("Type of website") + xlab("Malicious Benign") +
+labs( fill = "0=benign, 1=malicious")
+```
+
+\ Boxplot of URL_LENGTH by Type of website showing the outliers
+```{r}
+out <- boxplot(URL_LENGTH ~ Type, data = wsites)$out
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+```
+## The malicious website has three outliers for the URL_LENGTH which are 69, 70 & 75
+
+\ Finding the approximate value of the 26th highest value for each Type
+
+```{r}
+res <- boxplot(URL_LENGTH ~ Type, data=wsites)
+res$stats[4,]
+```
+# The approximate value of the 26th highest value for each Type will be the 4th quartile which is 75 since 75 is 26 values down from 100 which is the maximum. For the benign = 56, Malicious = 47 baring the URL_LENGTH outliers of the malicious
+
+
+# Question 3
+\ Generating scatterplot of number of app packets
+
+```{r}
+attach(wsites)
+plot(APP_PACKETS)
+```
+# The APP_Packets have their numbers mostly between 0 and 50. There is a very awkward outlier of 228 right at the very top
+
+
+# Question 4
+\ Generating scatterplot of the number of app packets vs the app bytes according to type
+
+```{r}
+p <- ggplot(wsites,aes(x=APP_BYTES,y=APP_PACKETS))
+p <- p + geom_point(colour="red") 
+p <- p + labs(title = "APP Packets vs APP Bytes", 
+   x="APP_Bytes (bytes)", y = "APP_Packets")
+p <- p + theme_classic()
+p
+```
+# The variables have a strong linear correlation and the graph looks reasonably linear
+
+
+# Question 5
+\ Generating a pie chart of CHARSET showing both counts and percentages
+
+```{r}
+coun <- table(wsites$CHARSET)
+slices <- table(wsites$CHARSET)
+lbls <- table(wsites$CHARSET)
+pct <- round(100*slices/sum(slices), 1)
+lbls <- paste(lbls, pct) # add percents to labels
+lbls <- paste(lbls,"%",sep="") # ad % to labels
+pie(coun, col=rainbow(length(lbls)),
+    main = "CHARSET PIECHART Showing Labels")
+pie(slices,labels = lbls, col=rainbow(length(lbls)),
+   main="CHARSET PIECHART with counts & %ages")
+```
+# ISO-8859-1 is the most common character encoding standard among the sample with a 42.6% occurrence, while US-ASCII is the least common character encoding standard amon g the sample with a 13.7% occurence
+
+
+# Question 6
+\ A bar chart showing the frequency of each value in CHARSET according to the Type of website
+```{r}
+library(ggplot2)
+
+# grouped bar plot
+ggplot(wsites, 
+       aes(x = Type, 
+           fill = CHARSET)) + 
+  geom_bar(position = "dodge")
+```
+# While ISO-8859-1 is the most common character encoding standard for benign websites in the sample, the UTF-8 is the most common character encoding standard for the malicious websites
+
+
+
+\\ SECTION 2
+# Question 1
+\ Generating a one-way table of frequencies (counts) and cumulative frequencies for WHOIS_COUNTRY. What country appears most times?
+
+```{r}
+owt <- table(wsites$WHOIS_COUNTRY)
+cbind( Freq=owt, Cumul=cumsum(owt))
+```
+# USA is the country that appears most times
+
+# Question 2
+\ Generating a two-way table of Type (in rows) and CHARSET (in columns) showing frequencies. What is the number of benign websites using UTF-8
+
+```{r}
+typxchaxset <- xtabs(~ Type+CHARSET, data=wsites)
+typxchaxset
+```
+# The number of benign websites using UTF-8 is 54
+
+
+# Question 3
+\ Generating a summary of the data statistics for CONTENT_LENGTH. Make at least one interesting observation for each of the attributes.
+
+```{r}
+summary(CONTENT_LENGTH)
+```
+# For the CONTENT_LENGTH, from the 6-number summary of the residuals, we can already see from the quartiles that the distribution does not look normal. The first quartile seems closer to the minimum that it is to the median, the median is not mumerically halfway between the minimum and the maximum but loser to the mimimum. the third quartile on the other hand is closer numerically to the median than the maximum while the mean is far greater than the third quartile. The maximum on the other hand is far greater than even the mean showing that this data is greatly skewed.
+
+
+\ Generating a summary of the data statistics for SERVER. Make at least one interesting observation for each of the attributes.
+
+```{r}
+summary(SERVER)
+```
+# There are a total of 190 servers which corresponds to the total number of websites
+
+
+\\ SECTION 3: SIGNIFICANCE TESTS - PASSWORDS DATASET
+
+# Loading the passwords
+
+```{r}
+passwords<-read.csv("passwords.csv")
+```
+
+
+# Displaying structure of dataset
+
+```{r}
+str(passwords)
+```
+
+
+# Question 1
+\ Determining a 99% confidence interval for the mean value of Length (the length after training was given)
+
+## t-value {-}
+
+# number of instances of data
+```{r}
+n <- length(passwords$LengthAfter)
+```
+
+# Confidence and significance
+```{r}
+confidence <- 0.95
+```
+
+```{r}
+significance <- 1- confidence
+```
+
+# two-tailed so half
+```{r}
+halfSignificance <- significance/2
+a <- 1 - halfSignificance
+```
+
+# degrees of freedom
+```{r}
+dfTimes <- n - 1
+```
+
+# finding t-value
+# function qt returns required value for t
+```{r}
+t <- qt(a, dfTimes)
+t
+```
+
+## Margin of error {-}
+#standard deviation for passwords data
+```{r}
+sdPasswords <- sd(passwords$LengthAfter)
+```
+
+# margin of error
+```{r}
+error <- t*sdPasswords/sqrt(n)
+error
+```
+
+## Confidence interval given margin of error and mean {-}
+# mean value
+```{r}
+meanPasswords <- mean(passwords$LengthAfter)
+```
+
+# Lower and upper limits
+```{r}
+lowerlimit <- meanPasswords - error
+upperlimit <- meanPasswords + error
+```
+
+# confidence interval
+```{r}
+CI <- paste("Confidence interval is (", lowerlimit, ", ", upperlimit, ")")
+CI
+```
+
+
+# Question 2
+\ Using a parametric test for matched pairs to test for evidence in increase in length of passwords after training. Use a significance level of 0.05.
+
+```{r}
+t.test(passwords$LengthBefore,passwords$LengthAfter,  alternative = "greater", paired = T, sig.level=0.05, mu = 0)
+```
+
+
+# Question 3
+\ Using a non-parametric test for matched pairs to test for evidence of difference in lengths (before and after training values).
+```{r}
+wilcox.test(x= passwords$LengthBefore, y = passwords$LengthAfter, alternative = "two.sided", mu = 0, paired = T, exact = F, correct = T, conf.int = F, conf.level = 0.95)
+```
+
+
+# Question 4
+\ Using a non-parametric test for matched pairs to test for evidence of increase in lengths (before and after training values).
+```{r}
+wilcox.test(x= passwords$LengthBefore, y = passwords$LengthAfter, alternative = "greater", mu = 0, paired = T, exact = F, correct = T, conf.int = F, conf.level = 0.95)
+```
+
+
+# Question 5
+\ Undertaking normality tests for the 2 length attributes.
+\ Shapiro-Wilk test for lengthBefore
+```{r}
+shapiro.test(passwords$LengthBefore)
+```
+# Distribution of LengthBefore is normal as the p-value > 0.05, hence we accept the Null hypothesis
+
+
+\ Shapiro-Wilk test for lengthAfter
+```{r}
+shapiro.test(passwords$LengthAfter)
+```
+# Distribution of LengthAfter is normal as the p-value > 0.05, hence we accept the Null hypothesis
+
+# Question 6
+\ converting the LengthAfter to dataframe
+```{r}
+df_LengthAfter <- data.frame(passwords$LengthAfter, passwords$Department)
+```
+
+\ Performing a one-way analysis of variance
+```{r}
+data.lm <- lm(passwords$LengthAfter ~ passwords$Department, data = df_LengthAfter, sig.level=0.05)
+
+data.av <- aov(data.lm)
+summary(data.av)
+```
+
+\ Performing Tukey's multiple comparison (t-test)
+```{r}
+data.test <- TukeyHSD(data.av, conf.level=0.95)
+data.test
+```
+
+\ Plotting the results
+```{r}
+plot(data.test)
+```
+# Firstly, the factorial ANOVA requires the dependent variable in the analysis to be of metric measurement level (that is ratio or interval data) the independent variables can be nominal or better. This has been satisfied as the dependent variable, LengthAfter is of metric measurement.
+
+# Secondly, the factorial analysis of variance assumes that the dependent variable approximates a multivariate normal distribution. This has been satisfied as the shapiro normality test conducted on the dependent variable, LengthAfter shows a p value of 0.996 which is greater than 0.05 proving the distribution of LengthAfter is normal.
+
+# Thirdly, the factorial ANOVA assumes homoscedasticity of error variances for the dependant variable, using Levene's Test to prove this:
+# Installing the "car" packages
+
+# Running the Levene's test
+```{r}
+library(car)
+leveneTest(LengthAfter ~ Department, data = passwords)
+```
+# The leveneTest reveals a sig, value of 0.09012 which is greater than 0.05, indicating that there is no significant difference between the error variances in LengthAfter.
+
+#Fourthly, There is no multicollinearity, that is, the factorial ANOVA requires the observations to be mutually independent from each other (e.g., no repeated measurements) and that the independent variables are independent from each other.
+
+
+## SECTION 4: SAMPLE SIZES AND RANDOM SAMPLE
+# Question 1
+\ Find the sample sizes of a 2-sample t-test for the given combinations of difference and power if a two-sided test is to be performed with α=0.01 and the estimated standard deviation is 15.
+
+# α=0.01, sd=15, power=0.85, delta=7
+```{r}
+power.t.test(power=0.85,delta=7,sd=15,sig.level=0.01,type="two.sample")
+```
+
+
+# α=0.01, sd=15, power=0.90, delta=7
+
+
+```{r}
+library(pwr)
+pwr.t.test(d=7/15,power=.90,sig.level=.01,type="two.sample",alternative="two.sided")
+```
+
+
+# α=0.01, sd=15, power=0.95, delta=7
+```{r}
+power.t.test(power=0.95,delta=7,sd=15,sig.level=0.01,type="two.sample")
+```
+
+
+# α=0.01, sd=15, power=0.85, delta=10
+```{r}
+pwr.t.test(d=10/15,power=.85,sig.level=.01,type="two.sample",alternative="two.sided")
+```
+
+
+# α=0.01, sd=15, power=0.90, delta=10
+```{r}
+power.t.test(power=0.90,delta=10,sd=15,sig.level=0.01,type="two.sample")
+```
+
+
+# α=0.01, sd=15, power=0.95, delta=10
+```{r}
+pwr.t.test(d=10/15,power=.95,sig.level=.01,type="two.sample",alternative="two.sided")
+```
+
+
+# α=0.01, sd=15, power=0.85, delta=13
+```{r}
+power.t.test(power=0.85,delta=13,sd=15,sig.level=0.01,type="two.sample")
+```
+
+
+# α=0.01, sd=15, power=0.90, delta=13
+```{r}
+pwr.t.test(d=13/15,power=.90,sig.level=.01,type="two.sample",alternative="two.sided")
+```
+
+
+# α=0.01, sd=15, power=0.95, delta=13
+```{r}
+power.t.test(power=0.95,delta=13,sd=15,sig.level=0.01,type="two.sample")
+```
+
+
+
+# Question 2
+\ Select 20 instances at random from a set of 150, numbered from 1 to 150. Present them in ascending order. Ensure the reproducibility of your results.
+
+```{r}
+set.seed(1)
+x <-sample(1:151, 20, replace =FALSE)
+sort(x, decreasing = FALSE)
+```
+
+
+# Question 3
+\ Devise a data collection procedure for a scenario of your choice, where you demonstrate your knowledge and skills regarding data collection. Ensure you state any assumptions made.
+
+# The Effectiveness of Two different virus detection algorithms
+Requirements for the experiment
+Appropriate data collection for a fair, unbiased experiment. 
+	Dependent variable -response. The variable that is being measured. 
+	E.g. Number of viruses detected
+	•Independent variable -factor. The variable whose impact on the dependent variable is being studied. 
+	E.g. type of virus detection algorithm. 
+	The 2 algorithms appear to detect exactly the types of viruses, so the choice of algorithm will be based on the number of viruses detected. 
+	Objective: Establish which algorithm detects the highest number of viruses given the computer has been exposed to the same degree of virus regime.
+	•The 2 algorithms are used for the detection of viruses. The number of viruses detected is noted. The mean amount detected will be used. 
+	Conclusions from experiments depend on how data was collected. Care must be taken to ensure data is fit-for-purpose.
+	Otherwise, conclusions may be unbiased
+	•E.g. comparing 2 anti-virus algorithms –mean amount detected collected. Data for the first algorithm is on detection in PC1.
+	Data for the second algorithm is on detection in PC2.
+	Is this a fair experiment? PC used may affect the amount detected.
